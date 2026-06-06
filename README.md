@@ -2,7 +2,7 @@
 
 VendorBridge is a centralized ERP platform that digitizes procurement processes, including vendor management, RFQs, quotations, approvals, purchase orders, and invoices. It reduces manual effort, improves workflow efficiency, enables real-time tracking, and supports scalable, role-based operations.
 
-## 🚀 Tech Stack
+##  Tech Stack
 
 - **Frontend:** React.js, Vite, Chart.js, CSS
 - **Backend:** Node.js, Express.js
@@ -10,13 +10,13 @@ VendorBridge is a centralized ERP platform that digitizes procurement processes,
 - **Authentication:** JSON Web Tokens (JWT)
 - **Other:** Multer (File Uploads), Nodemailer (Email Notifications)
 
-## 📋 Prerequisites
+##  Prerequisites
 
 Before you begin, ensure you have the following installed on your machine:
 - [Node.js](https://nodejs.org/) (v16 or higher recommended)
 - [MongoDB](https://www.mongodb.com/) (Local instance or MongoDB Atlas URI)
 
-## 🛠️ Getting Started
+##  Getting Started
 
 Follow these instructions to set up the project locally.
 
@@ -71,7 +71,7 @@ Follow these instructions to set up the project locally.
    ```
    *The frontend application will start on `http://localhost:5173`.*
 
-## 📁 Project Structure
+##  Project Structure
 
 ```text
 VendorBridge/
