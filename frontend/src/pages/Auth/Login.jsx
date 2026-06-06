@@ -54,15 +54,6 @@ const Login = () => {
         <div className="auth-link">
           Don't have an account? <Link to="/signup" style={{ color:'var(--primary)', fontWeight:600 }}>Create account</Link>
         </div>
-        <div style={{ marginTop:24, background:'var(--primary-100)', borderRadius:'var(--radius)', padding:'12px 16px' }}>
-          <div style={{ fontSize:12, fontWeight:700, color:'var(--primary)', marginBottom:6 }}>Demo Credentials</div>
-          <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.8 }}>
-            <strong>Admin:</strong> admin@vendorbridge.com / admin123<br/>
-            <strong>Manager:</strong> manager@vendorbridge.com / manager123<br/>
-            <strong>Officer:</strong> officer@vendorbridge.com / officer123<br/>
-            <strong>Vendor:</strong> vendor@vendorbridge.com / vendor123
-          </div>
-        </div>
       </div>
     </div>
   );
