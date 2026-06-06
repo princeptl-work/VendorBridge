@@ -7,15 +7,40 @@ const Approval = require('../models/Approval');
 
 exports.getOverview = async (req, res) => {
   try {
+    const mongoose = require('mongoose');
+    const vendorId = req.user.vendorId || new mongoose.Types.ObjectId();
+    if (req.user.role === 'vendor') {
+      const [totalRFQs, activeRFQs, totalPOs, totalInvoices, paidInvoices, pendingQuotations] = await Promise.all([
+        RFQ.countDocuments({ vendors: vendorId }),
+        RFQ.countDocuments({ vendors: vendorId, status: 'sent' }),
+        PurchaseOrder.countDocuments({ vendorId }),
+        Invoice.countDocuments({ vendorId }),
+        Invoice.countDocuments({ vendorId, status: 'paid' }),
+        Quotation.countDocuments({ vendorId, status: 'submitted' })
+      ]);
+      const spendAgg = await PurchaseOrder.aggregate([
+        { $match: { vendorId, status: { $in: ['confirmed', 'delivered'] } } },
+        { $group: { _id: null, total: { $sum: '$grandTotal' } } }
+      ]);
+      const totalSpend = spendAgg[0]?.total || 0;
+      return res.json({ success: true, stats: { totalVendors: 0, activeVendors: 0, totalRFQs, activeRFQs, totalPOs, totalInvoices, pendingApprovals: 0, paidInvoices, totalSpend, pendingQuotations } });
+    }
+
+    const match = {};
+    if (req.user.company) {
+      match.company = req.user.company;
+    } else {
+      match.company = '___non_existent_company___';
+    }
     const [totalVendors, activeVendors, totalRFQs, activeRFQs, totalPOs, totalInvoices, pendingApprovals, paidInvoices, pendingQuotations] = await Promise.all([
-      Vendor.countDocuments(), Vendor.countDocuments({ status: 'active' }),
-      RFQ.countDocuments(), RFQ.countDocuments({ status: 'sent' }),
-      PurchaseOrder.countDocuments(), Invoice.countDocuments(),
-      Approval.countDocuments({ status: 'pending' }),
-      Invoice.countDocuments({ status: 'paid' }),
-      Quotation.countDocuments({ status: 'submitted' })
+      Vendor.countDocuments(match), Vendor.countDocuments({ ...match, status: 'active' }),
+      RFQ.countDocuments(match), RFQ.countDocuments({ ...match, status: 'sent' }),
+      PurchaseOrder.countDocuments(match), Invoice.countDocuments(match),
+      Approval.countDocuments({ ...match, status: 'pending' }),
+      Invoice.countDocuments({ ...match, status: 'paid' }),
+      Quotation.countDocuments({ ...match, status: 'submitted' })
     ]);
-    const spendAgg = await PurchaseOrder.aggregate([{ $match: { status: { $in: ['confirmed', 'delivered'] } } }, { $group: { _id: null, total: { $sum: '$grandTotal' } } }]);
+    const spendAgg = await PurchaseOrder.aggregate([{ $match: { ...match, status: { $in: ['confirmed', 'delivered'] } } }, { $group: { _id: null, total: { $sum: '$grandTotal' } } }]);
     const totalSpend = spendAgg[0]?.total || 0;
     res.json({ success: true, stats: { totalVendors, activeVendors, totalRFQs, activeRFQs, totalPOs, totalInvoices, pendingApprovals, paidInvoices, totalSpend, pendingQuotations } });
   } catch (e) { res.status(500).json({ message: e.message }); }
@@ -23,10 +48,19 @@ exports.getOverview = async (req, res) => {
 
 exports.getMonthlySpending = async (req, res) => {
   try {
+    const match = {};
+    if (req.user.role === 'vendor') {
+      const mongoose = require('mongoose');
+      match.vendorId = req.user.vendorId || new mongoose.Types.ObjectId();
+    } else if (req.user.company) {
+      match.company = req.user.company;
+    } else {
+      match.company = '___non_existent_company___';
+    }
     const months = 12;
     const startDate = new Date(); startDate.setMonth(startDate.getMonth() - months + 1); startDate.setDate(1); startDate.setHours(0,0,0,0);
     const result = await PurchaseOrder.aggregate([
-      { $match: { createdAt: { $gte: startDate }, status: { $in: ['confirmed', 'delivered'] } } },
+      { $match: { ...match, createdAt: { $gte: startDate }, status: { $in: ['confirmed', 'delivered'] } } },
       { $group: { _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } }, totalSpend: { $sum: '$grandTotal' }, count: { $sum: 1 } } },
       { $sort: { '_id.year': 1, '_id.month': 1 } }
     ]);
@@ -43,11 +77,14 @@ exports.getMonthlySpending = async (req, res) => {
 
 exports.getVendorPerformance = async (req, res) => {
   try {
+    const match = {};
+    if (req.user.company) match.company = req.user.company;
     const vendorStats = await PurchaseOrder.aggregate([
-      { $match: { status: { $in: ['confirmed', 'delivered', 'partially_delivered'] } } },
+      { $match: { ...match, status: { $in: ['confirmed', 'delivered', 'partially_delivered'] } } },
       { $group: { _id: '$vendorId', totalOrders: { $sum: 1 }, totalSpend: { $sum: '$grandTotal' }, deliveredOrders: { $sum: { $cond: [{ $eq: ['$status', 'delivered'] }, 1, 0] } } } },
       { $lookup: { from: 'vendors', localField: '_id', foreignField: '_id', as: 'vendor' } },
       { $unwind: { path: '$vendor', preserveNullAndEmptyArrays: true } },
+      { $match: { 'vendor.company': req.user.company } },
       { $project: { vendorName: '$vendor.name', category: '$vendor.category', rating: '$vendor.rating', totalOrders: 1, totalSpend: 1, deliveredOrders: 1, fulfillmentRate: { $multiply: [{ $divide: ['$deliveredOrders', { $max: ['$totalOrders', 1] }] }, 100] } } },
       { $sort: { totalSpend: -1 } }, { $limit: 10 }
     ]);
@@ -57,17 +94,20 @@ exports.getVendorPerformance = async (req, res) => {
 
 exports.getProcurementStats = async (req, res) => {
   try {
+    const match = {};
+    if (req.user.company) match.company = req.user.company;
     const [rfqStats, quotationStats, approvalStats, poStats, invoiceStats] = await Promise.all([
-      RFQ.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
-      Quotation.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
-      Approval.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
-      PurchaseOrder.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
-      Invoice.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
+      RFQ.aggregate([{ $match: match }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
+      Quotation.aggregate([{ $match: match }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
+      Approval.aggregate([{ $match: match }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
+      PurchaseOrder.aggregate([{ $match: match }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
+      Invoice.aggregate([{ $match: match }, { $group: { _id: '$status', count: { $sum: 1 } } }])
     ]);
     const categorySpend = await PurchaseOrder.aggregate([
-      { $match: { status: { $in: ['confirmed', 'delivered'] } } },
+      { $match: { ...match, status: { $in: ['confirmed', 'delivered'] } } },
       { $lookup: { from: 'vendors', localField: 'vendorId', foreignField: '_id', as: 'vendor' } },
       { $unwind: { path: '$vendor', preserveNullAndEmptyArrays: true } },
+      { $match: { 'vendor.company': req.user.company } },
       { $group: { _id: '$vendor.category', totalSpend: { $sum: '$grandTotal' }, count: { $sum: 1 } } },
       { $sort: { totalSpend: -1 } }
     ]);

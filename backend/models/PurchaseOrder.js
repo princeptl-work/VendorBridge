@@ -27,6 +27,7 @@ const purchaseOrderSchema = new mongoose.Schema({
   deliveredAt: Date,
   cancelledAt: Date,
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  company: { type: String, trim: true },
   notes: String
 }, { timestamps: true });
 

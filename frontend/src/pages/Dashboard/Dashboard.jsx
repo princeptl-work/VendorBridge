@@ -58,7 +58,7 @@ const Dashboard = () => {
   const lineData = {
     labels: monthly.map(m => m.label),
     datasets: [{
-      label: 'Monthly Spend (₹)',
+      label: user?.role === 'vendor' ? 'Monthly Earnings (₹)' : 'Monthly Spend (₹)',
       data: monthly.map(m => m.totalSpend),
       fill: true,
       backgroundColor: 'rgba(113,75,103,0.08)',
@@ -92,18 +92,31 @@ const Dashboard = () => {
 
       {/* Stat Cards */}
       <div className="grid-stat mb-24">
-        <StatCard icon={<Building2 size={24} />} label="Total Vendors" value={stats?.totalVendors} color="purple" sub={`${stats?.activeVendors} active`} link="/vendors" />
-        <StatCard icon={<ClipboardList size={24} />} label="Active RFQs" value={stats?.activeRFQs} color="blue" sub={`${stats?.totalRFQs} total`} link="/rfqs" />
-        <StatCard icon={<CheckSquare size={24} />} label="Pending Approvals" value={stats?.pendingApprovals} color="orange" sub="Awaiting review" link="/approvals" />
-        <StatCard icon={<ShoppingBag size={24} />} label="Purchase Orders" value={stats?.totalPOs} color="green" sub="All time" link="/purchase-orders" />
-        <StatCard icon={<Receipt size={24} />} label="Total Invoices" value={stats?.totalInvoices} color="purple" sub={`${stats?.paidInvoices} paid`} link="/invoices" />
-        <StatCard icon={<CircleDollarSign size={24} />} label="Total Procurement" value={fmt(stats?.totalSpend)} color="green" sub="All confirmed POs" link="/reports" />
+        {user?.role === 'vendor' ? (
+          <>
+            <StatCard icon={<ClipboardList size={24} />} label="Active RFQs" value={stats?.activeRFQs} color="blue" sub={`${stats?.totalRFQs} total`} link="/rfqs" />
+            <StatCard icon={<FileText size={24} />} label="Quotations Submitted" value={stats?.pendingQuotations} color="orange" sub="Awaiting review" link="/quotations" />
+            <StatCard icon={<ShoppingBag size={24} />} label="Purchase Orders" value={stats?.totalPOs} color="green" sub="All time" link="/purchase-orders" />
+            <StatCard icon={<Receipt size={24} />} label="Total Invoices" value={stats?.totalInvoices} color="purple" sub={`${stats?.paidInvoices} paid`} link="/invoices" />
+          </>
+        ) : (
+          <>
+            <StatCard icon={<Building2 size={24} />} label="Total Vendors" value={stats?.totalVendors} color="purple" sub={`${stats?.activeVendors} active`} link="/vendors" />
+            <StatCard icon={<ClipboardList size={24} />} label="Active RFQs" value={stats?.activeRFQs} color="blue" sub={`${stats?.totalRFQs} total`} link="/rfqs" />
+            <StatCard icon={<CheckSquare size={24} />} label="Pending Approvals" value={stats?.pendingApprovals} color="orange" sub="Awaiting review" link="/approvals" />
+            <StatCard icon={<ShoppingBag size={24} />} label="Purchase Orders" value={stats?.totalPOs} color="green" sub="All time" link="/purchase-orders" />
+            <StatCard icon={<Receipt size={24} />} label="Total Invoices" value={stats?.totalInvoices} color="purple" sub={`${stats?.paidInvoices} paid`} link="/invoices" />
+            <StatCard icon={<CircleDollarSign size={24} />} label="Total Procurement" value={fmt(stats?.totalSpend)} color="green" sub="All confirmed POs" link="/reports" />
+          </>
+        )}
       </div>
 
       {/* Charts + Recent */}
       <div className="grid-2 mb-24">
         <div className="card">
-          <div className="card-title">Monthly Procurement Trend</div>
+          <div className="card-title">
+            {user?.role === 'vendor' ? 'Monthly Earnings Trend' : 'Monthly Procurement Trend'}
+          </div>
           {monthly.length > 0 ? <Line data={lineData} options={chartOpts} height={120} /> : <div style={{ textAlign:'center', padding:'40px 0', color:'var(--text-muted)' }}>No data yet</div>}
         </div>
         <div className="card">

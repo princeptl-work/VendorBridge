@@ -6,11 +6,13 @@ import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import Modal from '../../components/common/Modal';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
 
 const CATEGORIES = ['IT & Technology','Manufacturing','Logistics','Services','Raw Materials','Construction','Healthcare','Food & Beverages','Other'];
 
 const VendorList = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -65,7 +67,9 @@ const VendorList = () => {
           <div className="page-subtitle">Manage your vendor database and relationships</div>
         </div>
         <div className="page-actions">
-          <Link to="/vendors/new" className="btn btn-primary">+ Add Vendor</Link>
+          {['admin', 'procurement_officer'].includes(user?.role) && (
+            <Link to="/vendors/new" className="btn btn-primary">+ Add Vendor</Link>
+          )}
         </div>
       </div>
 
@@ -99,7 +103,8 @@ const VendorList = () => {
           <table>
             <thead><tr>
               <th>Vendor</th><th>Category</th><th>Email / Phone</th>
-              <th>GST Number</th><th>Rating</th><th>Status</th><th>Actions</th>
+              <th>GST Number</th><th>Rating</th><th>Status</th>
+              {['admin', 'procurement_officer'].includes(user?.role) && <th>Actions</th>}
             </tr></thead>
             <tbody>
               {vendors.map(v => (
@@ -116,13 +121,17 @@ const VendorList = () => {
                   <td style={{ fontFamily:'monospace', fontSize:12 }}>{v.gstNumber || '—'}</td>
                   <td><span className="stars" style={{ fontSize:13 }}>{stars(v.rating)}</span></td>
                   <td><Badge status={v.status} /></td>
-                  <td>
-                    <div className="td-actions">
-                      <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/vendors/${v._id}/edit`)}><Edit size={16} /></button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setStatusModal(v)}><Settings size={16} /></button>
-                      <button className="btn btn-ghost btn-sm" style={{ color:'var(--danger)' }} onClick={() => setDeleteModal(v)}><Trash2 size={16} /></button>
-                    </div>
-                  </td>
+                  {['admin', 'procurement_officer'].includes(user?.role) && (
+                    <td>
+                      <div className="td-actions">
+                        <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/vendors/${v._id}/edit`)}><Edit size={16} /></button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setStatusModal(v)}><Settings size={16} /></button>
+                        {user?.role === 'admin' && (
+                          <button className="btn btn-ghost btn-sm" style={{ color:'var(--danger)' }} onClick={() => setDeleteModal(v)}><Trash2 size={16} /></button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -160,6 +169,14 @@ const VendorList = () => {
               {s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
+          {user?.role === 'admin' && (
+            <>
+              <div style={{ margin:'8px 0', borderTop:'1px solid var(--border)' }} />
+              <button className="btn btn-danger" onClick={() => { setDeleteModal(statusModal); setStatusModal(null); }} style={{ justifyContent:'flex-start' }}>
+                Remove Vendor
+              </button>
+            </>
+          )}
         </div>
       </Modal>
     </div>

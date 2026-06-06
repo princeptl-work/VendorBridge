@@ -24,6 +24,7 @@ const UserManagement = () => {
   const [editUser, setEditUser] = useState(null);
   const [form, setForm] = useState({ name:'', email:'', password:'', role:'procurement_officer', phone:'', department:'', vendorId:'', isActive:true });
   const [saving, setSaving] = useState(false);
+  const [vendors, setVendors] = useState([]);
 
   const fetch = async () => {
     setLoading(true);
@@ -38,7 +39,10 @@ const UserManagement = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, [page, search, roleFilter]);
+  useEffect(() => {
+    fetch();
+    api.get('/vendors?limit=100&status=active').then(r => setVendors(r.data.vendors || [])).catch(() => {});
+  }, [page, search, roleFilter]);
 
   const openCreate = () => { setForm({ name:'', email:'', password:'', role:'procurement_officer', phone:'', department:'', vendorId:'', isActive:true }); setEditUser(null); setModal('create'); };
   const openEdit = (u) => { setForm({ name:u.name, email:u.email, password:'', role:u.role, phone:u.phone||'', department:u.department||'', vendorId:u.vendorId?._id||'', isActive:u.isActive }); setEditUser(u); setModal('edit'); };
@@ -46,6 +50,7 @@ const UserManagement = () => {
   const handleSave = async () => {
     if (!form.name || !form.email) { toast.error('Name and email required'); return; }
     if (modal === 'create' && !form.password) { toast.error('Password required'); return; }
+    if (form.role === 'vendor' && !form.vendorId) { toast.error('Please link a vendor profile'); return; }
     setSaving(true);
     try {
       if (modal === 'create') {
@@ -175,6 +180,15 @@ const UserManagement = () => {
             <label className="form-label">Department</label>
             <input className="form-control" value={form.department} onChange={e => setForm(f => ({...f,department:e.target.value}))} placeholder="Procurement" />
           </div>
+          {form.role === 'vendor' && (
+            <div className="form-group">
+              <label className="form-label">Link Vendor Profile <span className="req">*</span></label>
+              <select className="form-control" value={form.vendorId} onChange={e => setForm(f => ({...f,vendorId:e.target.value}))} required>
+                <option value="">-- Select Vendor --</option>
+                {vendors.map(v => <option key={v._id} value={v._id}>{v.name} ({v.email})</option>)}
+              </select>
+            </div>
+          )}
         </div>
         {modal === 'edit' && (
           <div className="form-group">

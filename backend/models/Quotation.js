@@ -22,7 +22,8 @@ const quotationSchema = new mongoose.Schema({
   submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   reviewedAt: Date,
-  rejectionReason: String
+  rejectionReason: String,
+  company: { type: String, trim: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Quotation', quotationSchema);

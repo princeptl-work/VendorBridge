@@ -22,7 +22,8 @@ const approvalSchema = new mongoose.Schema({
     performerRole: String,
     remarks: String,
     timestamp: { type: Date, default: Date.now }
-  }]
+  }],
+  company: { type: String, trim: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Approval', approvalSchema);

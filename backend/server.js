@@ -15,6 +15,7 @@ const purchaseOrderRoutes = require('./routes/purchaseOrders');
 const invoiceRoutes = require('./routes/invoices');
 const activityLogRoutes = require('./routes/activityLogs');
 const reportRoutes = require('./routes/reports');
+const uploadRoutes = require('./routes/upload');
 
 connectDB();
 
@@ -38,6 +39,7 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'VendorBridge API running', timestamp: new Date().toISOString() });

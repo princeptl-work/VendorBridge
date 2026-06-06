@@ -74,8 +74,7 @@ const PODetail = () => {
           {((['admin','procurement_officer'].includes(user?.role)) || (user?.role === 'vendor')) && po.status !== 'cancelled' && (
             <button className="btn btn-ghost" onClick={() => { setNewStatus(po.status); setStatusModal(true); }} style={{ display:'flex', gap:6, alignItems:'center' }}><Settings size={16} /> Update Status</button>
           )}
-          {((['admin','procurement_officer'].includes(user?.role) && po.status !== 'cancelled') ||
-            (user?.role === 'vendor' && po.status === 'delivered')) && !po.invoiceGenerated && (
+          {['admin','procurement_officer'].includes(user?.role) && po.status !== 'cancelled' && !po.invoiceGenerated && (
             <button className="btn btn-primary" onClick={() => setInvoiceModal(true)} style={{ display:'flex', gap:6, alignItems:'center' }}><Receipt size={16} /> Generate Invoice</button>
           )}
           {po.invoiceGenerated && <Link to="/invoices" className="btn btn-secondary" style={{ display:'flex', gap:6, alignItems:'center' }}>View Invoice <ArrowRight size={16} /></Link>}

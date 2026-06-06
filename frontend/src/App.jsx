@@ -6,6 +6,7 @@ import Loader from './components/common/Loader';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 import Dashboard from './pages/Dashboard/Dashboard';
 import VendorList from './pages/Vendors/VendorList';
 import VendorForm from './pages/Vendors/VendorForm';
@@ -45,6 +46,7 @@ function App() {
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
       <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+      <Route path="/reset-password/:token" element={<PublicRoute><ResetPassword /></PublicRoute>} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/vendors" element={<ProtectedRoute roles={['admin','procurement_officer','manager']}><VendorList /></ProtectedRoute>} />
       <Route path="/vendors/new" element={<ProtectedRoute roles={['admin','procurement_officer']}><VendorForm /></ProtectedRoute>} />

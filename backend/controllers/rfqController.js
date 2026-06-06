@@ -3,13 +3,21 @@ const ActivityLog = require('../models/ActivityLog');
 const { generateRFQNumber } = require('../utils/generateNumber');
 
 const log = (action, rfq, user, desc, extra = {}) =>
-  ActivityLog.create({ action, module: 'rfq', entityId: rfq._id, entityNumber: rfq.rfqNumber, performedBy: user._id, performerName: user.name, performerRole: user.role, description: desc, ...extra });
+  ActivityLog.create({ action, module: 'rfq', entityId: rfq._id, entityNumber: rfq.rfqNumber, performedBy: user._id, performerName: user.name, performerRole: user.role, description: desc, company: user.company, ...extra });
 
 exports.getRFQs = async (req, res) => {
   try {
     const { status, search, priority, page = 1, limit = 10 } = req.query;
     let query = {};
-    if (req.user.role === 'vendor' && req.user.vendorId) { query.vendors = req.user.vendorId; query.status = 'sent'; }
+    if (req.user.role === 'vendor') {
+      const mongoose = require('mongoose');
+      query.vendors = req.user.vendorId || new mongoose.Types.ObjectId();
+      query.status = 'sent';
+    } else if (req.user.company) {
+      query.company = req.user.company;
+    } else {
+      query.company = '___non_existent_company___';
+    }
     if (status) query.status = status;
     if (priority) query.priority = priority;
     if (search) query.$or = [{ title: { $regex: search, $options: 'i' } }, { rfqNumber: { $regex: search, $options: 'i' } }];
@@ -21,7 +29,16 @@ exports.getRFQs = async (req, res) => {
 
 exports.getRFQ = async (req, res) => {
   try {
-    const rfq = await RFQ.findById(req.params.id).populate('vendors', 'name email category phone contactPerson').populate('createdBy', 'name email').populate('selectedQuotationId');
+    const query = { _id: req.params.id };
+    if (req.user.role === 'vendor') {
+      const mongoose = require('mongoose');
+      query.vendors = req.user.vendorId || new mongoose.Types.ObjectId();
+    } else if (req.user.company) {
+      query.company = req.user.company;
+    } else {
+      query.company = '___non_existent_company___';
+    }
+    const rfq = await RFQ.findOne(query).populate('vendors', 'name email category phone contactPerson').populate('createdBy', 'name email').populate('selectedQuotationId');
     if (!rfq) return res.status(404).json({ message: 'RFQ not found' });
     res.json({ success: true, rfq });
   } catch (e) { res.status(500).json({ message: e.message }); }
@@ -30,7 +47,7 @@ exports.getRFQ = async (req, res) => {
 exports.createRFQ = async (req, res) => {
   try {
     const rfqNumber = await generateRFQNumber();
-    const rfq = new RFQ({ ...req.body, rfqNumber, createdBy: req.user._id });
+    const rfq = new RFQ({ ...req.body, rfqNumber, createdBy: req.user._id, company: req.user.company });
     await rfq.save();
     await rfq.populate('vendors', 'name email');
     await log('RFQ Created', rfq, req.user, `RFQ '${rfq.title}' created with ${rfq.items.length} item(s)`);
@@ -40,7 +57,9 @@ exports.createRFQ = async (req, res) => {
 
 exports.updateRFQ = async (req, res) => {
   try {
-    const rfq = await RFQ.findById(req.params.id);
+    const query = { _id: req.params.id };
+    if (req.user.company) query.company = req.user.company;
+    const rfq = await RFQ.findOne(query);
     if (!rfq) return res.status(404).json({ message: 'RFQ not found' });
     if (rfq.status !== 'draft') return res.status(400).json({ message: 'Only draft RFQs can be edited' });
     Object.assign(rfq, req.body);
@@ -52,7 +71,9 @@ exports.updateRFQ = async (req, res) => {
 
 exports.deleteRFQ = async (req, res) => {
   try {
-    const rfq = await RFQ.findById(req.params.id);
+    const query = { _id: req.params.id };
+    if (req.user.company) query.company = req.user.company;
+    const rfq = await RFQ.findOne(query);
     if (!rfq) return res.status(404).json({ message: 'RFQ not found' });
     if (rfq.status !== 'draft') return res.status(400).json({ message: 'Only draft RFQs can be deleted' });
     await rfq.deleteOne();
@@ -63,7 +84,9 @@ exports.deleteRFQ = async (req, res) => {
 
 exports.sendRFQ = async (req, res) => {
   try {
-    const rfq = await RFQ.findById(req.params.id).populate('vendors', 'name email');
+    const query = { _id: req.params.id };
+    if (req.user.company) query.company = req.user.company;
+    const rfq = await RFQ.findOne(query).populate('vendors', 'name email');
     if (!rfq) return res.status(404).json({ message: 'RFQ not found' });
     if (rfq.status !== 'draft') return res.status(400).json({ message: 'RFQ already sent' });
     if (!rfq.vendors?.length) return res.status(400).json({ message: 'Assign at least one vendor' });
@@ -76,7 +99,9 @@ exports.sendRFQ = async (req, res) => {
 
 exports.closeRFQ = async (req, res) => {
   try {
-    const rfq = await RFQ.findById(req.params.id);
+    const query = { _id: req.params.id };
+    if (req.user.company) query.company = req.user.company;
+    const rfq = await RFQ.findOne(query);
     if (!rfq) return res.status(404).json({ message: 'RFQ not found' });
     rfq.status = 'closed'; rfq.closedAt = new Date();
     await rfq.save();

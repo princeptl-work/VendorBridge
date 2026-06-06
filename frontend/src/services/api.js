@@ -11,7 +11,7 @@ api.interceptors.response.use(
   res => res,
   async error => {
     const orig = error.config;
-    if (error.response?.status === 401 && !orig._retry && !orig.url?.includes('/auth/login') && !orig.url?.includes('/auth/refresh')) {
+    if (error.response?.status === 401 && !orig._retry && !orig.url?.includes('/auth/')) {
       orig._retry = true;
       const refreshToken = localStorage.getItem('vb_refresh');
       if (refreshToken) {

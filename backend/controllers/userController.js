@@ -24,9 +24,9 @@ exports.getUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { name, email, role, phone, department, isActive, vendorId } = req.body;
-    const user = await User.findByIdAndUpdate(req.params.id, { name, email, role, phone, department, isActive, vendorId }, { new: true }).select('-password -refreshToken');
+    const user = await User.findByIdAndUpdate(req.params.id, { name, email, role, phone, department, isActive, vendorId: vendorId || undefined }, { new: true }).select('-password -refreshToken');
     if (!user) return res.status(404).json({ message: 'User not found' });
-    await ActivityLog.create({ action: 'User Updated', module: 'user', entityId: user._id, performedBy: req.user._id, performerName: req.user.name, performerRole: req.user.role, description: `User '${user.name}' updated` });
+    await ActivityLog.create({ action: 'User Updated', module: 'user', entityId: user._id, performedBy: req.user._id, performerName: req.user.name, performerRole: req.user.role, description: `User '${user.name}' updated`, company: req.user.company });
     res.json({ success: true, user });
   } catch (e) { res.status(500).json({ message: e.message }); }
 };

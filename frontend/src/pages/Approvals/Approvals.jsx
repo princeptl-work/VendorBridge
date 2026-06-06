@@ -127,7 +127,7 @@ const Approvals = () => {
                     </div>
                   )}
                 </div>
-                {a.status === 'pending' && ['admin','manager'].includes(user?.role) && (
+                {a.status === 'pending' && user?.role === 'manager' && (
                   <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                     <button className="btn btn-success" onClick={() => { setActionModal({ approval:a, type:'approve' }); setRemarks(''); }} style={{ display:'flex', gap:6, alignItems:'center' }}><Check size={16} /> Approve</button>
                     <button className="btn btn-danger" onClick={() => { setActionModal({ approval:a, type:'reject' }); setRemarks(''); }} style={{ display:'flex', gap:6, alignItems:'center' }}><X size={16} /> Reject</button>

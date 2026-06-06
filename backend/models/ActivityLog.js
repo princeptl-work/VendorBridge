@@ -15,7 +15,8 @@ const activityLogSchema = new mongoose.Schema({
   description: String,
   previousStatus: String,
   newStatus: String,
-  metadata: mongoose.Schema.Types.Mixed
+  metadata: mongoose.Schema.Types.Mixed,
+  company: { type: String, trim: true }
 }, { timestamps: true });
 
 activityLogSchema.index({ module: 1, createdAt: -1 });

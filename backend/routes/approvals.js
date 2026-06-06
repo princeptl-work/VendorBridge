@@ -6,6 +6,6 @@ router.use(protect);
 router.get('/', getApprovals);
 router.get('/:id', getApproval);
 router.post('/', authorize('admin', 'procurement_officer'), createApproval);
-router.patch('/:id/approve', authorize('admin', 'manager'), approveApproval);
-router.patch('/:id/reject', authorize('admin', 'manager'), rejectApproval);
+router.patch('/:id/approve', authorize('manager'), approveApproval);
+router.patch('/:id/reject', authorize('manager'), rejectApproval);
 module.exports = router;

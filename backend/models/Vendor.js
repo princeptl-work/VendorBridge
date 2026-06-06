@@ -8,7 +8,7 @@ const vendorSchema = new mongoose.Schema({
     required: true
   },
   gstNumber: { type: String, sparse: true, trim: true, uppercase: true },
-  contactPerson: { type: String, required: true, trim: true },
+  contactPerson: { type: String, trim: true },
   email: { type: String, required: true, lowercase: true, trim: true },
   phone: { type: String, required: true },
   alternatePhone: String,
@@ -28,6 +28,7 @@ const vendorSchema = new mongoose.Schema({
   totalSpend: { type: Number, default: 0 },
   notes: String,
   tags: [String],
+  company: { type: String, trim: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 

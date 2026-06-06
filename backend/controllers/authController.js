@@ -11,11 +11,28 @@ const sendResponse = (res, user, statusCode = 200) => {
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role, phone, department, vendorId } = req.body;
+    const { name, email, password, role, phone, department, vendorId, company } = req.body;
     if (!name || !email || !password) return res.status(400).json({ message: 'Name, email and password required' });
     if (await User.findOne({ email })) return res.status(409).json({ message: 'Email already registered' });
 
-    const user = new User({ name, email, password, role: role || 'procurement_officer', phone, department, vendorId: vendorId || undefined });
+    let finalVendorId = vendorId;
+    if (role === 'vendor') {
+      const Vendor = require('../models/Vendor');
+      let vendorDoc;
+      if (finalVendorId) {
+        vendorDoc = await Vendor.findById(finalVendorId);
+        if (!vendorDoc) {
+          return res.status(400).json({ message: 'The linked vendor profile does not exist.' });
+        }
+      } else {
+        vendorDoc = await Vendor.findOne({ email: email.toLowerCase() });
+        if (vendorDoc) {
+          finalVendorId = vendorDoc._id;
+        }
+      }
+    }
+
+    const user = new User({ name, email, password, role: role || 'procurement_officer', phone, department, vendorId: finalVendorId || undefined, company: role !== 'vendor' ? company : undefined });
     await user.save();
 
     const token = user.generateAuthToken();
@@ -24,9 +41,9 @@ exports.register = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    await ActivityLog.create({ action: 'User Registered', module: 'auth', entityId: user._id, performedBy: user._id, performerName: user.name, performerRole: user.role, description: `New user '${user.name}' registered` });
+    await ActivityLog.create({ action: 'User Registered', module: 'auth', entityId: user._id, performedBy: user._id, performerName: user.name, performerRole: user.role, description: `New user '${user.name}' registered`, company: user.company });
 
-    res.status(201).json({ success: true, token, refreshToken, user: { _id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone, department: user.department, vendorId: user.vendorId, isActive: user.isActive } });
+    res.status(201).json({ success: true, token, refreshToken, user: { _id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone, department: user.department, vendorId: user.vendorId, company: user.company, isActive: user.isActive } });
   } catch (error) {
     res.status(500).json({ message: 'Registration failed', error: error.message });
   }
@@ -50,9 +67,9 @@ exports.login = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    await ActivityLog.create({ action: 'User Login', module: 'auth', entityId: user._id, performedBy: user._id, performerName: user.name, performerRole: user.role, description: `User '${user.name}' logged in` });
+    await ActivityLog.create({ action: 'User Login', module: 'auth', entityId: user._id, performedBy: user._id, performerName: user.name, performerRole: user.role, description: `User '${user.name}' logged in`, company: user.company });
 
-    res.json({ success: true, token, refreshToken, user: { _id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone, department: user.department, vendorId: user.vendorId, isActive: user.isActive, lastLogin: user.lastLogin } });
+    res.json({ success: true, token, refreshToken, user: { _id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone, department: user.department, vendorId: user.vendorId, company: user.company, isActive: user.isActive, lastLogin: user.lastLogin } });
   } catch (error) {
     res.status(500).json({ message: 'Login failed', error: error.message });
   }

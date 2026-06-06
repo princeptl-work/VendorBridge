@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
   vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' },
   phone: String,
   department: String,
+  company: { type: String, trim: true },
   isActive: { type: Boolean, default: true },
   refreshToken: String,
   resetPasswordToken: String,

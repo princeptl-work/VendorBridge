@@ -6,8 +6,10 @@ import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import Loader from '../../components/common/Loader';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
 
 const QuotationComparison = () => {
+  const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [rfq, setRFQ] = useState(null);
@@ -101,6 +103,12 @@ const QuotationComparison = () => {
     }
   };
 
+  const acceptedQuotation = quotations.find(q => q.status === 'accepted' || q._id === rfq?.selectedQuotationId?._id || q._id === rfq?.selectedQuotationId);
+  const subTotal = acceptedQuotation ? acceptedQuotation.totalAmount : 0;
+  const taxRate = poForm.taxRate || 0;
+  const taxAmount = (subTotal * taxRate) / 100;
+  const grandTotal = subTotal + taxAmount;
+
   if (loading) return <Loader />;
 
   return (
@@ -114,14 +122,18 @@ const QuotationComparison = () => {
           <div className="page-subtitle">{rfq?.title} — {quotations.length} quotation(s) received</div>
         </div>
         <div className="page-actions">
-          {rfq?.approvalStatus !== 'pending' && rfq?.approvalStatus !== 'approved' && quotations.some(q => q.status === 'under_review') && (
+          {user?.role === 'procurement_officer' && rfq?.approvalStatus !== 'pending' && rfq?.approvalStatus !== 'approved' && quotations.some(q => q.status === 'under_review') && (
             <button className="btn btn-primary" onClick={() => setApprovalModal(true)} style={{ display:'flex', gap:6, alignItems:'center' }}><CheckCircle size={16} /> Request Approval</button>
           )}
           {rfq?.approvalStatus === 'pending' && <span className="badge badge-warning" style={{ fontSize:13, display:'inline-flex', gap:6, alignItems:'center' }}><Hourglass size={14} /> Approval Pending</span>}
           {rfq?.approvalStatus === 'approved' && rfq?.status !== 'closed' && (
-            <button className="btn btn-success" onClick={() => setPOModal(true)} style={{ display:'flex', gap:6, alignItems:'center' }}>
-              <CheckCircle size={16} /> Generate PO
-            </button>
+            user?.role === 'procurement_officer' ? (
+              <button className="btn btn-success" onClick={() => setPOModal(true)} style={{ display:'flex', gap:6, alignItems:'center' }}>
+                <CheckCircle size={16} /> Generate PO
+              </button>
+            ) : (
+              <span className="badge badge-info" style={{ fontSize:13 }}>Approved (PO Pending)</span>
+            )
           )}
           {rfq?.approvalStatus === 'approved' && rfq?.status === 'closed' && (
             <span className="badge badge-success" style={{ fontSize:13 }}>PO Generated (Closed)</span>
@@ -175,12 +187,14 @@ const QuotationComparison = () => {
                     {q.validUntil && <div style={{ marginTop:8, fontSize:12, color:'var(--text-muted)' }}>Valid until: {new Date(q.validUntil).toLocaleDateString('en-IN')}</div>}
                   </div>
                   <div style={{ padding:'12px 16px', borderTop:'1px solid var(--border)', display:'flex', gap:8 }}>
-                    {q.status === 'submitted' && (
+                    {q.status === 'submitted' && user?.role === 'procurement_officer' && (
                       <button className="btn btn-primary btn-sm" style={{ flex:1 }} onClick={() => setSelectModal(q)}>Select</button>
                     )}
                     {q.status === 'under_review' && <span style={{ fontSize:12, color:'var(--primary)', fontWeight:600 }}>✓ Under Review</span>}
                     {q.status === 'accepted' && <span style={{ fontSize:12, color:'var(--success)', fontWeight:600 }}>✓ Accepted</span>}
-                    {q.status !== 'rejected' && <button className="btn btn-ghost btn-sm" onClick={async () => { try { await api.patch(`/quotations/${q._id}/reject`, { reason:'Not selected' }); toast.success('Quotation rejected'); load(); } catch { toast.error('Failed'); } }}>Reject</button>}
+                    {q.status !== 'rejected' && user?.role === 'procurement_officer' && (
+                      <button className="btn btn-ghost btn-sm" onClick={async () => { try { await api.patch(`/quotations/${q._id}/reject`, { reason:'Not selected' }); toast.success('Quotation rejected'); load(); } catch { toast.error('Failed'); } }}>Reject</button>
+                    )}
                   </div>
                 </div>
               );
@@ -301,6 +315,21 @@ const QuotationComparison = () => {
         <div className="form-group">
           <label className="form-label">Notes</label>
           <textarea className="form-control" rows="2" value={poForm.notes} onChange={e => setPOForm(f => ({...f, notes: e.target.value}))} placeholder="Additional notes..." />
+        </div>
+        <div className="alert alert-info" style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Subtotal:</span>
+            <strong>₹{subTotal.toLocaleString('en-IN')}</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>GST ({taxRate}%):</span>
+            <strong>₹{taxAmount.toLocaleString('en-IN')}</strong>
+          </div>
+          <hr style={{ border: 'none', borderTop: '1px solid var(--primary-border)', margin: '4px 0' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15 }}>
+            <span>Grand Total:</span>
+            <strong>₹{grandTotal.toLocaleString('en-IN')}</strong>
+          </div>
         </div>
       </Modal>
     </div>

@@ -21,6 +21,7 @@ const rfqSchema = new mongoose.Schema({
   sentAt: Date,
   closedAt: Date,
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  company: { type: String, trim: true },
   notes: String
 }, { timestamps: true });
 

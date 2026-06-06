@@ -12,8 +12,10 @@ const RFQForm = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     title: '', description: '', deadline: '', priority: 'medium', notes: '',
-    vendors: [], items: [{ name:'', description:'', quantity:1, unit:'units', estimatedUnitPrice:0 }]
+    vendors: [], items: [{ name:'', description:'', quantity:1, unit:'units', estimatedUnitPrice:0 }],
+    attachments: []
   });
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     api.get('/vendors?limit=100&status=active').then(r => setVendors(r.data.vendors || [])).catch(() => {});
@@ -21,13 +23,42 @@ const RFQForm = () => {
       setLoading(true);
       api.get(`/rfqs/${id}`).then(r => {
         const rfq = r.data.rfq;
-        setForm({ title:rfq.title, description:rfq.description||'', deadline:rfq.deadline?.slice(0,10), priority:rfq.priority, notes:rfq.notes||'', vendors:rfq.vendors.map(v=>v._id), items:rfq.items.map(i=>({name:i.name,description:i.description||'',quantity:i.quantity,unit:i.unit,estimatedUnitPrice:i.estimatedUnitPrice||0})) });
+        setForm({ title:rfq.title, description:rfq.description||'', deadline:rfq.deadline?.slice(0,10), priority:rfq.priority, notes:rfq.notes||'', vendors:rfq.vendors.map(v=>v._id), items:rfq.items.map(i=>({name:i.name,description:i.description||'',quantity:i.quantity,unit:i.unit,estimatedUnitPrice:i.estimatedUnitPrice||0})), attachments: rfq.attachments || [] });
         setLoading(false);
       }).catch(() => { toast.error('Failed to load RFQ'); navigate('/rfqs'); });
     }
   }, [id]);
 
   const set = (k,v) => setForm(f => ({...f, [k]:v}));
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    setUploading(true);
+    try {
+      const res = await api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setForm(f => ({
+        ...f,
+        attachments: [...(f.attachments || []), { name: res.data.name, url: res.data.url }]
+      }));
+      toast.success('File uploaded successfully!');
+    } catch {
+      toast.error('File upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeAttachment = (index) => {
+    setForm(f => ({
+      ...f,
+      attachments: (f.attachments || []).filter((_, idx) => idx !== index)
+    }));
+  };
   const setItem = (i,k,v) => setForm(f => { const items=[...f.items]; items[i]={...items[i],[k]:v}; return {...f,items}; });
   const addItem = () => setForm(f => ({...f, items:[...f.items,{name:'',description:'',quantity:1,unit:'units',estimatedUnitPrice:0}]}));
   const removeItem = i => setForm(f => ({...f, items:f.items.filter((_,idx)=>idx!==i)}));
@@ -84,6 +115,22 @@ const RFQForm = () => {
           <div className="form-group">
             <label className="form-label">Additional Notes</label>
             <textarea className="form-control" rows="2" value={form.notes} onChange={e => set('notes', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Attachments</label>
+            <input className="form-control" type="file" onChange={handleFileUpload} disabled={uploading} />
+            {uploading && <div style={{ fontSize: 12, color: 'var(--primary)', marginTop: 4 }}>Uploading...</div>}
+            
+            {form.attachments?.length > 0 && (
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {form.attachments.map((att, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-page)', padding: '6px 10px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                    <a href={att.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600 }}>{att.name}</a>
+                    <button type="button" onClick={() => removeAttachment(idx)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: 12 }}>Remove</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
