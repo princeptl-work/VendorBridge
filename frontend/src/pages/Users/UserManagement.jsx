@@ -15,7 +15,6 @@ const ROLES = [
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
-  const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -40,7 +39,6 @@ const UserManagement = () => {
   };
 
   useEffect(() => { fetch(); }, [page, search, roleFilter]);
-  useEffect(() => { api.get('/vendors?limit=100').then(r => setVendors(r.data.vendors || [])).catch(()=>{}); }, []);
 
   const openCreate = () => { setForm({ name:'', email:'', password:'', role:'procurement_officer', phone:'', department:'', vendorId:'', isActive:true }); setEditUser(null); setModal('create'); };
   const openEdit = (u) => { setForm({ name:u.name, email:u.email, password:'', role:u.role, phone:u.phone||'', department:u.department||'', vendorId:u.vendorId?._id||'', isActive:u.isActive }); setEditUser(u); setModal('edit'); };
@@ -177,15 +175,6 @@ const UserManagement = () => {
             <label className="form-label">Department</label>
             <input className="form-control" value={form.department} onChange={e => setForm(f => ({...f,department:e.target.value}))} placeholder="Procurement" />
           </div>
-          {form.role === 'vendor' && (
-            <div className="form-group">
-              <label className="form-label">Linked Vendor</label>
-              <select className="form-control" value={form.vendorId} onChange={e => setForm(f => ({...f,vendorId:e.target.value}))}>
-                <option value="">Select vendor...</option>
-                {vendors.map(v => <option key={v._id} value={v._id}>{v.name}</option>)}
-              </select>
-            </div>
-          )}
         </div>
         {modal === 'edit' && (
           <div className="form-group">

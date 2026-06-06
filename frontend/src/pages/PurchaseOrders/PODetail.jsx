@@ -21,7 +21,20 @@ const PODetail = () => {
   const [generating, setGenerating] = useState(false);
 
   const load = async () => {
-    try { const res = await api.get(`/purchase-orders/${id}`); setPO(res.data.purchaseOrder); }
+    try {
+      const res = await api.get(`/purchase-orders/${id}`);
+      const purchaseOrder = res.data.purchaseOrder;
+      setPO(purchaseOrder);
+      if (purchaseOrder) {
+        setInvoiceForm(f => ({
+          ...f,
+          buyerDetails: {
+            ...f.buyerDetails,
+            name: purchaseOrder.company || 'VendorBridge Corp'
+          }
+        }));
+      }
+    }
     catch { toast.error('PO not found'); navigate('/purchase-orders'); }
     setLoading(false);
   };
@@ -58,10 +71,11 @@ const PODetail = () => {
           <div style={{ marginTop:8 }}><Badge status={po.status} /></div>
         </div>
         <div className="page-actions">
-          {['admin','procurement_officer'].includes(user?.role) && po.status !== 'cancelled' && (
+          {((['admin','procurement_officer'].includes(user?.role)) || (user?.role === 'vendor')) && po.status !== 'cancelled' && (
             <button className="btn btn-ghost" onClick={() => { setNewStatus(po.status); setStatusModal(true); }} style={{ display:'flex', gap:6, alignItems:'center' }}><Settings size={16} /> Update Status</button>
           )}
-          {['admin','procurement_officer'].includes(user?.role) && po.status !== 'cancelled' && !po.invoiceGenerated && (
+          {((['admin','procurement_officer'].includes(user?.role) && po.status !== 'cancelled') ||
+            (user?.role === 'vendor' && po.status === 'delivered')) && !po.invoiceGenerated && (
             <button className="btn btn-primary" onClick={() => setInvoiceModal(true)} style={{ display:'flex', gap:6, alignItems:'center' }}><Receipt size={16} /> Generate Invoice</button>
           )}
           {po.invoiceGenerated && <Link to="/invoices" className="btn btn-secondary" style={{ display:'flex', gap:6, alignItems:'center' }}>View Invoice <ArrowRight size={16} /></Link>}
@@ -84,7 +98,6 @@ const PODetail = () => {
           <div className="detail-section-title">Vendor Details</div>
           <div className="detail-row"><span className="detail-label">Vendor Name</span><span className="detail-value" style={{ fontWeight:700 }}>{po.vendorId?.name}</span></div>
           <div className="detail-row"><span className="detail-label">Category</span><span className="detail-value">{po.vendorId?.category}</span></div>
-          <div className="detail-row"><span className="detail-label">Contact</span><span className="detail-value">{po.vendorId?.contactPerson}</span></div>
           <div className="detail-row"><span className="detail-label">Email</span><span className="detail-value">{po.vendorId?.email}</span></div>
           <div className="detail-row"><span className="detail-label">Phone</span><span className="detail-value">{po.vendorId?.phone}</span></div>
           {po.vendorId?.gstNumber && <div className="detail-row"><span className="detail-label">GST Number</span><span className="detail-value" style={{ fontFamily:'monospace' }}>{po.vendorId?.gstNumber}</span></div>}

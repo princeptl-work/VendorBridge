@@ -16,6 +16,20 @@ const QuotationComparison = () => {
   const [selectModal, setSelectModal] = useState(null);
   const [approvalModal, setApprovalModal] = useState(null);
   const [approvalForm, setApprovalForm] = useState({ priority:'medium', dueDate:'' });
+  
+  const [poModal, setPOModal] = useState(false);
+  const [poForm, setPOForm] = useState({
+    deliveryDate: '',
+    street: '',
+    city: '',
+    state: '',
+    pincode: '',
+    paymentTerms: 'Net 30',
+    taxRate: 18,
+    notes: '',
+    terms: ''
+  });
+  const [poGenerating, setPoGenerating] = useState(false);
 
   const load = async () => {
     try {
@@ -52,6 +66,41 @@ const QuotationComparison = () => {
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
   };
 
+  const handleGeneratePO = async () => {
+    const acceptedQuotation = quotations.find(q => q.status === 'accepted' || q._id === rfq.selectedQuotationId?._id || q._id === rfq.selectedQuotationId);
+    if (!acceptedQuotation) {
+      toast.error('No accepted quotation found to generate PO.');
+      return;
+    }
+    setPoGenerating(true);
+    try {
+      const payload = {
+        quotationId: acceptedQuotation._id,
+        rfqId: id,
+        deliveryDate: poForm.deliveryDate || undefined,
+        deliveryAddress: {
+          street: poForm.street,
+          city: poForm.city,
+          state: poForm.state,
+          pincode: poForm.pincode,
+          country: 'India'
+        },
+        paymentTerms: poForm.paymentTerms,
+        taxRate: poForm.taxRate,
+        notes: poForm.notes,
+        terms: poForm.terms
+      };
+      const res = await api.post('/purchase-orders', payload);
+      toast.success('Purchase Order generated successfully!');
+      setPOModal(false);
+      navigate(`/purchase-orders/${res.data.purchaseOrder._id}`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to generate PO');
+    } finally {
+      setPoGenerating(false);
+    }
+  };
+
   if (loading) return <Loader />;
 
   return (
@@ -69,7 +118,14 @@ const QuotationComparison = () => {
             <button className="btn btn-primary" onClick={() => setApprovalModal(true)} style={{ display:'flex', gap:6, alignItems:'center' }}><CheckCircle size={16} /> Request Approval</button>
           )}
           {rfq?.approvalStatus === 'pending' && <span className="badge badge-warning" style={{ fontSize:13, display:'inline-flex', gap:6, alignItems:'center' }}><Hourglass size={14} /> Approval Pending</span>}
-          {rfq?.approvalStatus === 'approved' && <Link to="/purchase-orders" className="btn btn-success">Generate PO →</Link>}
+          {rfq?.approvalStatus === 'approved' && rfq?.status !== 'closed' && (
+            <button className="btn btn-success" onClick={() => setPOModal(true)} style={{ display:'flex', gap:6, alignItems:'center' }}>
+              <CheckCircle size={16} /> Generate PO
+            </button>
+          )}
+          {rfq?.approvalStatus === 'approved' && rfq?.status === 'closed' && (
+            <span className="badge badge-success" style={{ fontSize:13 }}>PO Generated (Closed)</span>
+          )}
         </div>
       </div>
 
@@ -195,6 +251,57 @@ const QuotationComparison = () => {
           <input className="form-control" type="date" value={approvalForm.dueDate} onChange={e => setApprovalForm(f => ({...f, dueDate: e.target.value}))} />
         </div>
         <div className="alert alert-info">The selected quotation will be sent to managers for approval.</div>
+      </Modal>
+
+      {/* Generate PO Modal */}
+      <Modal isOpen={poModal} onClose={() => setPOModal(false)} title="Generate Purchase Order" size="md"
+        footer={<><button className="btn btn-ghost" onClick={() => setPOModal(false)}>Cancel</button><button className="btn btn-success" onClick={handleGeneratePO} disabled={poGenerating}>{poGenerating ? 'Generating...' : 'Confirm & Generate PO'}</button></>}>
+        <div className="form-row cols-2">
+          <div className="form-group">
+            <label className="form-label">Delivery Date</label>
+            <input className="form-control" type="date" value={poForm.deliveryDate} onChange={e => setPOForm(f => ({...f, deliveryDate: e.target.value}))} min={new Date().toISOString().slice(0,10)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Payment Terms</label>
+            <select className="form-control" value={poForm.paymentTerms} onChange={e => setPOForm(f => ({...f, paymentTerms: e.target.value}))}>
+              <option value="Net 30">Net 30</option>
+              <option value="Net 60">Net 60</option>
+              <option value="Net 90">Net 90</option>
+              <option value="Immediate">Immediate</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Tax Rate (GST %)</label>
+          <input className="form-control" type="number" min="0" max="100" value={poForm.taxRate} onChange={e => setPOForm(f => ({...f, taxRate: +e.target.value}))} />
+        </div>
+        <div className="form-section-title" style={{ marginTop:16, marginBottom:8 }}>Delivery Address</div>
+        <div className="form-group">
+          <label className="form-label">Street Address</label>
+          <input className="form-control" value={poForm.street} onChange={e => setPOForm(f => ({...f, street: e.target.value}))} placeholder="123 Business Rd" />
+        </div>
+        <div className="form-row cols-3">
+          <div className="form-group">
+            <label className="form-label">City</label>
+            <input className="form-control" value={poForm.city} onChange={e => setPOForm(f => ({...f, city: e.target.value}))} placeholder="Mumbai" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">State</label>
+            <input className="form-control" value={poForm.state} onChange={e => setPOForm(f => ({...f, state: e.target.value}))} placeholder="Maharashtra" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Pincode</label>
+            <input className="form-control" value={poForm.pincode} onChange={e => setPOForm(f => ({...f, pincode: e.target.value}))} placeholder="400001" />
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Terms & Conditions</label>
+          <textarea className="form-control" rows="2" value={poForm.terms} onChange={e => setPOForm(f => ({...f, terms: e.target.value}))} placeholder="Delivery conditions, penalty terms, etc..." />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Notes</label>
+          <textarea className="form-control" rows="2" value={poForm.notes} onChange={e => setPOForm(f => ({...f, notes: e.target.value}))} placeholder="Additional notes..." />
+        </div>
       </Modal>
     </div>
   );

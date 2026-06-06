@@ -12,22 +12,20 @@ const VendorForm = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    name:'', category:'IT & Technology', gstNumber:'', contactPerson:'', email:'', phone:'', alternatePhone:'',
+    name:'', category:'IT & Technology', gstNumber:'', email:'', phone:'', alternatePhone:'',
     notes:'', rating:0, status:'active',
-    address:{ street:'', city:'', state:'', pincode:'', country:'India' },
-    bankDetails:{ accountNumber:'', bankName:'', ifscCode:'', accountHolderName:'' }
+    address:{ street:'', city:'', state:'', pincode:'', country:'India' }
   });
 
   useEffect(() => {
     if (isEdit) {
       setLoading(true);
-      api.get(`/vendors/${id}`).then(r => { const v = r.data.vendor; setForm({ name:v.name, category:v.category, gstNumber:v.gstNumber||'', contactPerson:v.contactPerson, email:v.email, phone:v.phone, alternatePhone:v.alternatePhone||'', notes:v.notes||'', rating:v.rating||0, status:v.status, address:v.address||{street:'',city:'',state:'',pincode:'',country:'India'}, bankDetails:v.bankDetails||{accountNumber:'',bankName:'',ifscCode:'',accountHolderName:''} }); setLoading(false); }).catch(() => { toast.error('Failed to load vendor'); navigate('/vendors'); });
+      api.get(`/vendors/${id}`).then(r => { const v = r.data.vendor; setForm({ name:v.name, category:v.category, gstNumber:v.gstNumber||'', email:v.email, phone:v.phone, alternatePhone:v.alternatePhone||'', notes:v.notes||'', rating:v.rating||0, status:v.status, address:v.address||{street:'',city:'',state:'',pincode:'',country:'India'} }); setLoading(false); }).catch(() => { toast.error('Failed to load vendor'); navigate('/vendors'); });
     }
   }, [id]);
 
   const set = (k,v) => setForm(f => ({...f, [k]:v}));
   const setAddr = (k,v) => setForm(f => ({...f, address:{...f.address,[k]:v}}));
-  const setBank = (k,v) => setForm(f => ({...f, bankDetails:{...f.bankDetails,[k]:v}}));
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -66,11 +64,7 @@ const VendorForm = () => {
               </select>
             </div>
           </div>
-          <div className="form-row cols-3">
-            <div className="form-group">
-              <label className="form-label">Contact Person <span className="req">*</span></label>
-              <input className="form-control" value={form.contactPerson} onChange={e => set('contactPerson', e.target.value)} placeholder="Contact name" required />
-            </div>
+          <div className="form-row cols-2">
             <div className="form-group">
               <label className="form-label">Email <span className="req">*</span></label>
               <input className="form-control" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="vendor@company.com" required />
@@ -124,30 +118,6 @@ const VendorForm = () => {
             <div className="form-group">
               <label className="form-label">Country</label>
               <input className="form-control" value={form.address.country} onChange={e => setAddr('country', e.target.value)} />
-            </div>
-          </div>
-        </div>
-
-        <div className="card mb-16">
-          <div className="form-section-title">Bank Details</div>
-          <div className="form-row cols-2">
-            <div className="form-group">
-              <label className="form-label">Account Holder Name</label>
-              <input className="form-control" value={form.bankDetails.accountHolderName} onChange={e => setBank('accountHolderName', e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Account Number</label>
-              <input className="form-control" value={form.bankDetails.accountNumber} onChange={e => setBank('accountNumber', e.target.value)} />
-            </div>
-          </div>
-          <div className="form-row cols-2">
-            <div className="form-group">
-              <label className="form-label">Bank Name</label>
-              <input className="form-control" value={form.bankDetails.bankName} onChange={e => setBank('bankName', e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">IFSC Code</label>
-              <input className="form-control" value={form.bankDetails.ifscCode} onChange={e => setBank('ifscCode', e.target.value.toUpperCase())} style={{ fontFamily:'monospace' }} />
             </div>
           </div>
         </div>

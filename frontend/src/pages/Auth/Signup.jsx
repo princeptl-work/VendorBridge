@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
 
 const ROLES = [
@@ -13,7 +14,7 @@ const ROLES = [
 const Signup = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name:'', email:'', password:'', confirmPassword:'', role:'procurement_officer', phone:'', department:'' });
+  const [form, setForm] = useState({ name:'', email:'', password:'', confirmPassword:'', role:'procurement_officer', phone:'', department:'', companyName:'' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -23,9 +24,18 @@ const Signup = () => {
     e.preventDefault();
     if (form.password !== form.confirmPassword) { setError('Passwords do not match'); return; }
     if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (form.role !== 'vendor' && !form.companyName) { setError('Company name is required'); return; }
     setError(''); setLoading(true);
     try {
-      await register({ name:form.name, email:form.email, password:form.password, role:form.role, phone:form.phone, department:form.department });
+      await register({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+        phone: form.phone,
+        department: form.department,
+        company: form.role !== 'vendor' ? form.companyName : undefined
+      });
       toast.success('Account created successfully!');
       navigate('/');
     } catch (err) {
@@ -55,6 +65,12 @@ const Signup = () => {
               </select>
             </div>
           </div>
+          {form.role !== 'vendor' && (
+            <div className="form-group">
+              <label className="form-label">Company Name <span className="req">*</span></label>
+              <input className="form-control" placeholder="VendorBridge Corp" value={form.companyName} onChange={e => set('companyName', e.target.value)} required />
+            </div>
+          )}
           <div className="form-group">
             <label className="form-label">Email Address <span className="req">*</span></label>
             <input className="form-control" type="email" placeholder="you@company.com" value={form.email} onChange={e => set('email', e.target.value)} required />

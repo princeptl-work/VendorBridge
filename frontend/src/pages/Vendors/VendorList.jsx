@@ -98,7 +98,7 @@ const VendorList = () => {
         ) : (
           <table>
             <thead><tr>
-              <th>Vendor</th><th>Category</th><th>Contact Person</th><th>Email / Phone</th>
+              <th>Vendor</th><th>Category</th><th>Email / Phone</th>
               <th>GST Number</th><th>Rating</th><th>Status</th><th>Actions</th>
             </tr></thead>
             <tbody>
@@ -109,7 +109,6 @@ const VendorList = () => {
                     {v.address?.city && <div style={{ fontSize:12, color:'var(--text-muted)' }}>{v.address.city}, {v.address.state}</div>}
                   </td>
                   <td><span style={{ fontSize:12, background:'var(--primary-100)', color:'var(--primary)', padding:'3px 8px', borderRadius:20, fontWeight:600 }}>{v.category}</span></td>
-                  <td>{v.contactPerson}</td>
                   <td>
                     <div style={{ fontSize:13 }}>{v.email}</div>
                     <div style={{ fontSize:12, color:'var(--text-muted)' }}>{v.phone}</div>
