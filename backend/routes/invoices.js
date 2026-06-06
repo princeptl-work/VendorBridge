@@ -1,0 +1,12 @@
+const router = require('express').Router();
+const { protect } = require('../middleware/auth');
+const { authorize } = require('../middleware/roleCheck');
+const { getInvoices, getInvoice, createInvoice, updateInvoice, sendInvoice, markPaid } = require('../controllers/invoiceController');
+router.use(protect);
+router.get('/', getInvoices);
+router.get('/:id', getInvoice);
+router.post('/', authorize('admin', 'procurement_officer'), createInvoice);
+router.put('/:id', authorize('admin', 'procurement_officer'), updateInvoice);
+router.patch('/:id/send-email', authorize('admin', 'procurement_officer'), sendInvoice);
+router.patch('/:id/mark-paid', authorize('admin', 'procurement_officer', 'manager'), markPaid);
+module.exports = router;

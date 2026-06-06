@@ -1,0 +1,11 @@
+const router = require('express').Router();
+const { protect } = require('../middleware/auth');
+const { authorize } = require('../middleware/roleCheck');
+const { getApprovals, getApproval, createApproval, approveApproval, rejectApproval } = require('../controllers/approvalController');
+router.use(protect);
+router.get('/', getApprovals);
+router.get('/:id', getApproval);
+router.post('/', authorize('admin', 'procurement_officer'), createApproval);
+router.patch('/:id/approve', authorize('admin', 'manager'), approveApproval);
+router.patch('/:id/reject', authorize('admin', 'manager'), rejectApproval);
+module.exports = router;

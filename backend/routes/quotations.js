@@ -1,0 +1,12 @@
+const router = require('express').Router();
+const { protect } = require('../middleware/auth');
+const { authorize } = require('../middleware/roleCheck');
+const { getQuotations, getQuotation, createQuotation, updateQuotation, acceptQuotation, rejectQuotation } = require('../controllers/quotationController');
+router.use(protect);
+router.get('/', getQuotations);
+router.get('/:id', getQuotation);
+router.post('/', authorize('admin', 'vendor', 'procurement_officer'), createQuotation);
+router.put('/:id', authorize('admin', 'vendor', 'procurement_officer'), updateQuotation);
+router.patch('/:id/accept', authorize('admin', 'procurement_officer', 'manager'), acceptQuotation);
+router.patch('/:id/reject', authorize('admin', 'procurement_officer', 'manager'), rejectQuotation);
+module.exports = router;

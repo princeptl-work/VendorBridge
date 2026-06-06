@@ -1,0 +1,12 @@
+const router = require('express').Router();
+const { protect } = require('../middleware/auth');
+const { authorize } = require('../middleware/roleCheck');
+const { getVendors, getVendor, createVendor, updateVendor, deleteVendor, updateVendorStatus } = require('../controllers/vendorController');
+router.use(protect);
+router.get('/', getVendors);
+router.get('/:id', getVendor);
+router.post('/', authorize('admin', 'procurement_officer'), createVendor);
+router.put('/:id', authorize('admin', 'procurement_officer'), updateVendor);
+router.delete('/:id', authorize('admin'), deleteVendor);
+router.patch('/:id/status', authorize('admin', 'procurement_officer'), updateVendorStatus);
+module.exports = router;

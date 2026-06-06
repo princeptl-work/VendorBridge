@@ -1,0 +1,11 @@
+const router = require('express').Router();
+const { protect } = require('../middleware/auth');
+const { authorize } = require('../middleware/roleCheck');
+const { getPOs, getPO, createPO, updatePO, updatePOStatus } = require('../controllers/purchaseOrderController');
+router.use(protect);
+router.get('/', getPOs);
+router.get('/:id', getPO);
+router.post('/', authorize('admin', 'procurement_officer'), createPO);
+router.put('/:id', authorize('admin', 'procurement_officer'), updatePO);
+router.patch('/:id/status', authorize('admin', 'procurement_officer', 'manager'), updatePOStatus);
+module.exports = router;

@@ -1,0 +1,15 @@
+const router = require('express').Router();
+const { protect } = require('../middleware/auth');
+const { authorize } = require('../middleware/roleCheck');
+const { getRFQs, getRFQ, createRFQ, updateRFQ, deleteRFQ, sendRFQ, closeRFQ } = require('../controllers/rfqController');
+const { getQuotationsByRFQ } = require('../controllers/quotationController');
+router.use(protect);
+router.get('/', getRFQs);
+router.get('/:id', getRFQ);
+router.get('/:id/quotations', getQuotationsByRFQ);
+router.post('/', authorize('admin', 'procurement_officer'), createRFQ);
+router.put('/:id', authorize('admin', 'procurement_officer'), updateRFQ);
+router.delete('/:id', authorize('admin', 'procurement_officer'), deleteRFQ);
+router.patch('/:id/send', authorize('admin', 'procurement_officer'), sendRFQ);
+router.patch('/:id/close', authorize('admin', 'procurement_officer', 'manager'), closeRFQ);
+module.exports = router;
