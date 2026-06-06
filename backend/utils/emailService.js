@@ -67,3 +67,19 @@ exports.sendPasswordResetEmail = async ({ email, resetUrl, name }) => {
   </div></body></html>`;
   return exports.sendEmail({ to: email, subject: 'VendorBridge - Password Reset', html });
 };
+
+exports.sendOtpEmail = async ({ email, otp, name }) => {
+  const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f5f5f5;padding:20px">
+  <div style="background:white;max-width:500px;margin:0 auto;border-radius:8px;overflow:hidden">
+    <div style="background:#714b67;color:white;padding:30px;text-align:center"><h2>Login OTP</h2></div>
+    <div style="padding:30px">
+      <p>Hi ${name || 'User'},</p>
+      <p>Your One-Time Password (OTP) to login to VendorBridge is:</p>
+      <div style="text-align:center;margin:24px 0;font-size:32px;font-weight:bold;letter-spacing:4px;color:#714b67;">
+        ${otp}
+      </div>
+      <p>This code expires in 5 minutes. Do not share it with anyone.</p>
+    </div>
+  </div></body></html>`;
+  return exports.sendEmail({ to: email, subject: 'VendorBridge - Login OTP', html });
+};
