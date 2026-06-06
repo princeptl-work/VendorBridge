@@ -36,9 +36,30 @@ exports.getInvoice = async (req, res) => {
     } else {
       query.company = '___non_existent_company___';
     }
-    const inv = await Invoice.findOne(query).populate('vendorId').populate('poId', 'poNumber deliveryDate paymentTerms deliveryAddress').populate('createdBy', 'name email');
+    const inv = await Invoice.findOne(query).populate('vendorId').populate('poId', 'poNumber deliveryDate paymentTerms deliveryAddress quotationId').populate('createdBy', 'name email');
     if (!inv) return res.status(404).json({ message: 'Invoice not found' });
-    res.json({ success: true, invoice: inv });
+
+    let managerEmail = '';
+    if (inv.poId && inv.poId.quotationId) {
+      const Approval = require('../models/Approval');
+      const approval = await Approval.findOne({ quotationId: inv.poId.quotationId }).populate('timeline.performedBy');
+      if (approval) {
+        const approvalStep = approval.timeline.find(t => t.action === 'approved');
+        if (approvalStep && approvalStep.performedBy) {
+          managerEmail = approvalStep.performedBy.email;
+        }
+      }
+    }
+    if (!managerEmail) {
+      const User = require('../models/User');
+      const manager = await User.findOne({ role: 'manager', company: inv.company, isActive: true });
+      if (manager) managerEmail = manager.email;
+    }
+
+    const invoiceObj = inv.toObject();
+    invoiceObj.managerEmail = managerEmail;
+
+    res.json({ success: true, invoice: invoiceObj });
   } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
@@ -58,7 +79,18 @@ exports.createInvoice = async (req, res) => {
     if (!po) return res.status(404).json({ message: 'PO not found' });
     if (po.invoiceGenerated) return res.status(409).json({ message: 'Invoice already generated for this PO' });
     const invoiceNumber = await generateInvoiceNumber();
-    const inv = new Invoice({ invoiceNumber, poId, vendorId: po.vendorId._id, buyerDetails: buyerDetails || { name: po.company || process.env.COMPANY_NAME || 'VendorBridge Corp', email: process.env.COMPANY_EMAIL || '' }, items: po.items, subTotal: po.subTotal, taxRate: po.taxRate, taxAmount: po.taxAmount, grandTotal: po.grandTotal, dueDate: dueDate || new Date(Date.now() + 30*24*60*60*1000), paymentTerms: paymentTerms || po.paymentTerms || 'Net 30', notes, status: 'draft', createdBy: req.user._id, company: po.company });
+
+    const resolvedBuyerDetails = buyerDetails || {
+      name: po.company || 'VendorBridge Corp',
+      address: po.deliveryAddress?.street || '',
+      city: po.deliveryAddress?.city || '',
+      state: po.deliveryAddress?.state || '',
+      pincode: po.deliveryAddress?.pincode || '',
+      email: req.user.email || '',
+      phone: req.user.phone || ''
+    };
+
+    const inv = new Invoice({ invoiceNumber, poId, vendorId: po.vendorId._id, buyerDetails: resolvedBuyerDetails, items: po.items, subTotal: po.subTotal, taxRate: po.taxRate, taxAmount: po.taxAmount, grandTotal: po.grandTotal, dueDate: dueDate || new Date(Date.now() + 30*24*60*60*1000), paymentTerms: paymentTerms || po.paymentTerms || 'Net 30', notes, status: 'draft', createdBy: req.user._id, company: po.company });
     await inv.save();
     await PurchaseOrder.findByIdAndUpdate(poId, { invoiceGenerated: true });
     await inv.populate('vendorId', 'name email category');

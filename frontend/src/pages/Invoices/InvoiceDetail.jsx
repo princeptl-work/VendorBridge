@@ -84,8 +84,8 @@ const InvoiceDetail = () => {
           <div style={{ marginTop:8 }}><Badge status={invoice.status} /></div>
         </div>
         <div className="page-actions">
-          {['admin','procurement_officer'].includes(user?.role) && invoice.status !== 'paid' && (
-            <button className="btn btn-secondary" onClick={() => { setEmailForm({ recipientEmail: invoice.vendorId?.email || '', message:'' }); setEmailModal(true); }} style={{ display:'flex', gap:6, alignItems:'center' }}><Mail size={16} /> Send Email</button>
+          {['admin','procurement_officer'].includes(user?.role) && (
+            <button className="btn btn-secondary" onClick={() => { setEmailForm({ recipientEmail: invoice.managerEmail || '', message:'' }); setEmailModal(true); }} style={{ display:'flex', gap:6, alignItems:'center' }}><Mail size={16} /> Send Email</button>
           )}
           {['admin','procurement_officer','manager'].includes(user?.role) && invoice.status !== 'paid' && (
             <button className="btn btn-success" onClick={() => setPaidModal(true)} style={{ display:'flex', gap:6, alignItems:'center' }}><CircleDollarSign size={16} /> Mark Paid</button>

@@ -15,25 +15,13 @@ const PODetail = () => {
   const [po, setPO] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statusModal, setStatusModal] = useState(false);
-  const [invoiceModal, setInvoiceModal] = useState(false);
   const [newStatus, setNewStatus] = useState('');
-  const [invoiceForm, setInvoiceForm] = useState({ dueDate:'', paymentTerms:'Net 30', notes:'', buyerDetails:{ name:'VendorBridge Corp', address:'', gstNumber:'', email:'', phone:'' } });
   const [generating, setGenerating] = useState(false);
 
   const load = async () => {
     try {
       const res = await api.get(`/purchase-orders/${id}`);
-      const purchaseOrder = res.data.purchaseOrder;
-      setPO(purchaseOrder);
-      if (purchaseOrder) {
-        setInvoiceForm(f => ({
-          ...f,
-          buyerDetails: {
-            ...f.buyerDetails,
-            name: purchaseOrder.company || 'VendorBridge Corp'
-          }
-        }));
-      }
+      setPO(res.data.purchaseOrder);
     }
     catch { toast.error('PO not found'); navigate('/purchase-orders'); }
     setLoading(false);
@@ -49,9 +37,8 @@ const PODetail = () => {
   const handleGenerateInvoice = async () => {
     setGenerating(true);
     try {
-      const res = await api.post('/invoices', { poId: id, ...invoiceForm });
+      const res = await api.post('/invoices', { poId: id });
       toast.success('Invoice generated!');
-      setInvoiceModal(false);
       navigate(`/invoices/${res.data.invoice._id}`);
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to generate invoice'); }
     setGenerating(false);
@@ -75,7 +62,7 @@ const PODetail = () => {
             <button className="btn btn-ghost" onClick={() => { setNewStatus(po.status); setStatusModal(true); }} style={{ display:'flex', gap:6, alignItems:'center' }}><Settings size={16} /> Update Status</button>
           )}
           {['admin','procurement_officer'].includes(user?.role) && po.status !== 'cancelled' && !po.invoiceGenerated && (
-            <button className="btn btn-primary" onClick={() => setInvoiceModal(true)} style={{ display:'flex', gap:6, alignItems:'center' }}><Receipt size={16} /> Generate Invoice</button>
+            <button className="btn btn-primary" onClick={handleGenerateInvoice} disabled={generating} style={{ display:'flex', gap:6, alignItems:'center' }}><Receipt size={16} /> {generating ? 'Generating...' : 'Generate Invoice'}</button>
           )}
           {po.invoiceGenerated && <Link to="/invoices" className="btn btn-secondary" style={{ display:'flex', gap:6, alignItems:'center' }}>View Invoice <ArrowRight size={16} /></Link>}
         </div>
@@ -142,41 +129,6 @@ const PODetail = () => {
         </div>
       </Modal>
 
-      {/* Generate Invoice Modal */}
-      <Modal isOpen={invoiceModal} onClose={() => setInvoiceModal(false)} title={<div style={{ display:'flex', gap:8, alignItems:'center' }}><Receipt size={20} /> Generate Invoice</div>} size="md"
-        footer={<><button className="btn btn-ghost" onClick={() => setInvoiceModal(false)}>Cancel</button><button className="btn btn-primary" onClick={handleGenerateInvoice} disabled={generating}>{generating ? 'Generating...' : 'Generate Invoice'}</button></>}>
-        <div className="form-row cols-2">
-          <div className="form-group">
-            <label className="form-label">Due Date</label>
-            <input className="form-control" type="date" value={invoiceForm.dueDate} onChange={e => setInvoiceForm(f => ({...f, dueDate: e.target.value}))} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Payment Terms</label>
-            <select className="form-control" value={invoiceForm.paymentTerms} onChange={e => setInvoiceForm(f => ({...f, paymentTerms: e.target.value}))}>
-              <option>Net 30</option><option>Net 60</option><option>Net 90</option><option>Immediate</option>
-            </select>
-          </div>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Buyer Company Name</label>
-          <input className="form-control" value={invoiceForm.buyerDetails.name} onChange={e => setInvoiceForm(f => ({...f, buyerDetails:{...f.buyerDetails,name:e.target.value}}))} />
-        </div>
-        <div className="form-row cols-2">
-          <div className="form-group">
-            <label className="form-label">Buyer GST Number</label>
-            <input className="form-control" value={invoiceForm.buyerDetails.gstNumber} onChange={e => setInvoiceForm(f => ({...f, buyerDetails:{...f.buyerDetails,gstNumber:e.target.value}}))} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Buyer Email</label>
-            <input className="form-control" type="email" value={invoiceForm.buyerDetails.email} onChange={e => setInvoiceForm(f => ({...f, buyerDetails:{...f.buyerDetails,email:e.target.value}}))} />
-          </div>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Notes</label>
-          <textarea className="form-control" rows="2" value={invoiceForm.notes} onChange={e => setInvoiceForm(f => ({...f, notes: e.target.value}))} />
-        </div>
-        <div className="alert alert-info">Invoice will be generated for <strong>₹{(po.grandTotal||0).toLocaleString('en-IN')}</strong> (including {po.taxRate}% GST)</div>
-      </Modal>
     </div>
   );
 };
